@@ -1,0 +1,74 @@
+import streamlit as st
+import os
+from PIL import Image
+from transformers import pipeline
+
+# Importação do nosso módulo customizado (que está na pasta src)
+from src.gerenciador_logs import salvar_execucao
+
+# --- Configurações ---
+st.set_page_config(page_title="Observatório AI", page_icon="🔭", layout="wide")
+VOLUME_PATH = "/Volumes/AI/AISTROS/IMAGES"
+
+# --- Funções do Modelo (Localizadas aqui para simplificar a estrutura de arquivos) ---
+@st.cache_resource
+def carregar_modelo():
+    """
+    Carrega o modelo do Hugging Face e coloca em cache para não recarregar a cada clique.
+    Modelo: Image Captioning (Gera descrição da imagem)
+    """
+    print("Iniciando carregamento do modelo...")
+    return pipeline("image-to-text", model="Salesforce/blip-image-captioning-large")
+
+# --- Interface Principal ---
+st.title("🌌 Identificador de Astros e Constelações")
+st.markdown(f"Conectado ao catálogo: `{VOLUME_PATH}`")
+
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    st.subheader("Entrada de Dados")
+    nome_arquivo = st.text_input("Nome do arquivo (ex: orion.jpg):")
+    botao_analisar = st.button("🔭 Analisar Imagem", type="primary")
+
+# Lógica de Execução
+if botao_analisar and nome_arquivo:
+    caminho_completo = os.path.join(VOLUME_PATH, nome_arquivo)
+    
+    if os.path.exists(caminho_completo):
+        # 1. Mostrar Imagem
+        with col1:
+            image = Image.open(caminho_completo)
+            st.image(image, caption=f"Arquivo: {nome_arquivo}", use_container_width=True)
+        
+        # 2. Processar com IA
+        with col2:
+            st.subheader("Resultados")
+            with st.spinner("A Inteligência Artificial está observando o céu..."):
+                try:
+                    modelo = carregar_modelo()
+                    resultado = modelo(image)
+                    texto_resposta = resultado[0]['generated_text']
+                    
+                    st.success("Análise Concluída!")
+                    st.markdown("### 📝 O que foi identificado:")
+                    st.info(f"> {texto_resposta}")
+                    
+                    # 3. Salvar Logs (MLflow + Volume)
+                    sucesso_log, msg_log = salvar_execucao(
+                        nome_arquivo, 
+                        caminho_completo, 
+                        texto_resposta, 
+                        VOLUME_PATH
+                    )
+                    
+                    if sucesso_log:
+                        st.caption(f"✅ Log salvo com sucesso: `{msg_log}`")
+                        st.caption("✅ Rastreamento enviado para o MLflow")
+                    else:
+                        st.error(f"Erro ao salvar log: {msg_log}")
+                        
+                except Exception as e:
+                    st.error(f"Erro durante o processamento: {e}")
+    else:
+        st.error(f"❌ Imagem não encontrada no caminho: {caminho_completo}")
