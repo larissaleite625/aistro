@@ -1,7 +1,3 @@
-Aqui está o `README.md` atualizado, incorporando a menção ao **Databricks Free Edition** e o contexto do **Streamlit** para futuros Databricks Apps.
-
------
-
 # 🌌 Aistro - Análise de Imagens Astronômicas com IA
 
 O **Aistro** é uma ferramenta de reconhecimento e análise de imagens astronômicas que utiliza modelos de *Visual Question Answering* (VQA) para descrever automaticamente corpos celestes.
